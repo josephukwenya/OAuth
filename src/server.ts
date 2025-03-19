@@ -7,10 +7,14 @@ import morgan from 'morgan';
 import authRoutes from './routes/auth.routes';
 import cookieParser from 'cookie-parser';
 import './config/passport';
+import { connectDB } from './config/db';
 
 dotenv.config();
 
 const app = express();
+
+// Connect MongoDB
+connectDB();
 
 app.use(morgan('dev'));
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
