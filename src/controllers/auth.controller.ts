@@ -6,6 +6,8 @@ import {
   verifyRefreshToken,
 } from '../utils/jwt';
 import { IUser, User } from '../models/user.model';
+import { AuthService } from '../services/auth.service';
+const authService = new AuthService();
 
 export class AuthController {
   googleAuth: (req: Request, res: Response, next: NextFunction) => void =
@@ -16,27 +18,35 @@ export class AuthController {
     res: Response,
     next: NextFunction
   ) => void = (req, res, next) => {
-    passport.authenticate('google', async (err: any, user: IUser) => {
-      if (err || !user) {
-        res.status(400).json({ message: 'Authentication failed' });
-        return;
+    passport.authenticate('google', async (err: any, profile: any) => {
+      if (err || !profile) {
+        return res.status(400).json({ message: 'Authentication failed' });
       }
 
-      // Check if the user already exists in the database
-      let existingUser = await User.findOne({ googleId: user.googleId });
+      try {
+        const { user, accessToken, refreshToken } =
+          await authService.socialLogin(profile, 'google');
 
-      const accessToken = generateAccessToken(user);
-      const refreshToken = generateRefreshToken(user);
+        // Set refresh token in cookie
+        res.cookie('refreshToken', refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
 
-      // Store refresh token in HTTP-only cookie
-      res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      });
-
-      return res.json({ accessToken });
+        return res.json({
+          accessToken,
+          user: {
+            name: user.name,
+            email: user.email,
+            avatar: user.avatar,
+          },
+        });
+      } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Internal server error' });
+      }
     })(req, res, next);
   };
 

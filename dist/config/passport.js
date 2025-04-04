@@ -16,9 +16,9 @@ passport_1.default.use(new passport_google_oauth20_1.Strategy({
     callbackURL: '/auth/google/callback',
     scope: ['profile', 'email'],
 }, async (accessToken, refreshToken, profile, done) => {
+    // Just pass the profile to the controller
     try {
-        const user = await authService.socialLogin(profile, 'google');
-        return done(null, user);
+        return done(null, profile);
     }
     catch (error) {
         return done(error, false);
@@ -31,8 +31,7 @@ passport_1.default.use(new passport_facebook_1.Strategy({
     profileFields: ['id', 'displayName', 'emails', 'picture.type(large)'],
 }, async (accessToken, refreshToken, profile, done) => {
     try {
-        const user = await authService.socialLogin(profile, 'facebook');
-        return done(null, user);
+        return done(null, profile);
     }
     catch (error) {
         return done(error, false);

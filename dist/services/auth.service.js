@@ -11,17 +11,32 @@ class AuthService {
             name: profile.displayName,
             avatar: profile.photos?.[0]?.value,
             provider,
+            googleId: provider === 'google' ? profile.id : undefined,
         };
         let user = await user_model_1.User.findOne({ providerId: socialUser.providerId });
         if (!user) {
-            user = await user_model_1.User.create(socialUser);
+            try {
+                user = await user_model_1.User.create(socialUser);
+            }
+            catch (err) {
+                throw err;
+            }
         }
-        const accessToken = (0, jwt_1.generateAccessToken)(user);
-        const refreshToken = (0, jwt_1.generateRefreshToken)(user);
-        return { user, accessToken, refreshToken };
+        try {
+            const accessToken = (0, jwt_1.generateAccessToken)(user);
+            const refreshToken = (0, jwt_1.generateRefreshToken)(user);
+            return { user, accessToken, refreshToken };
+        }
+        catch (err) {
+            throw err;
+        }
     }
     async findUserById(id) {
-        return user_model_1.User.findById(id);
+        const user = await user_model_1.User.findById(id);
+        if (!user) {
+            throw new Error('User not found');
+        }
+        return user;
     }
 }
 exports.AuthService = AuthService;

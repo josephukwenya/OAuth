@@ -36,9 +36,9 @@ passport.use(
       profile: GoogleProfile,
       done: DoneFunction
     ) => {
+      // Just pass the profile to the controller
       try {
-        const user = await authService.socialLogin(profile, 'google');
-        return done(null, user);
+        return done(null, profile);
       } catch (error) {
         return done(error, false);
       }
@@ -56,8 +56,7 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        const user = await authService.socialLogin(profile, 'facebook');
-        return done(null, user);
+        return done(null, profile);
       } catch (error) {
         return done(error, false);
       }

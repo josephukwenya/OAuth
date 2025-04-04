@@ -4,4 +4,5 @@ export interface SocialUserDTO {
   name: string;
   avatar?: string;
   provider: 'google' | 'facebook';
+  googleId?: string;
 }

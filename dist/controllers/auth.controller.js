@@ -6,28 +6,38 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const passport_1 = __importDefault(require("passport"));
 const jwt_1 = require("../utils/jwt");
-const user_model_1 = require("../models/user.model");
+const auth_service_1 = require("../services/auth.service");
+const authService = new auth_service_1.AuthService();
 class AuthController {
     constructor() {
         this.googleAuth = passport_1.default.authenticate('google', { scope: ['profile', 'email'] });
         this.googleAuthCallback = (req, res, next) => {
-            passport_1.default.authenticate('google', async (err, user) => {
-                if (err || !user) {
-                    res.status(400).json({ message: 'Authentication failed' });
-                    return;
+            passport_1.default.authenticate('google', async (err, profile) => {
+                if (err || !profile) {
+                    return res.status(400).json({ message: 'Authentication failed' });
                 }
-                // Check if the user already exists in the database
-                let existingUser = await user_model_1.User.findOne({ googleId: user.googleId });
-                const accessToken = (0, jwt_1.generateAccessToken)(user);
-                const refreshToken = (0, jwt_1.generateRefreshToken)(user);
-                // Store refresh token in HTTP-only cookie
-                res.cookie('refreshToken', refreshToken, {
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === 'production',
-                    sameSite: 'strict',
-                    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-                });
-                return res.json({ accessToken });
+                try {
+                    const { user, accessToken, refreshToken } = await authService.socialLogin(profile, 'google');
+                    // Set refresh token in cookie
+                    res.cookie('refreshToken', refreshToken, {
+                        httpOnly: true,
+                        secure: process.env.NODE_ENV === 'production',
+                        sameSite: 'strict',
+                        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+                    });
+                    return res.json({
+                        accessToken,
+                        user: {
+                            name: user.name,
+                            email: user.email,
+                            avatar: user.avatar,
+                        },
+                    });
+                }
+                catch (error) {
+                    console.error(error);
+                    return res.status(500).json({ message: 'Internal server error' });
+                }
             })(req, res, next);
         };
         this.facebookAuth = passport_1.default.authenticate('facebook', { scope: ['email'] });
