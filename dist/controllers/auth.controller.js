@@ -6,15 +6,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const passport_1 = __importDefault(require("passport"));
 const jwt_1 = require("../utils/jwt");
+const user_model_1 = require("../models/user.model");
 class AuthController {
     constructor() {
         this.googleAuth = passport_1.default.authenticate('google', { scope: ['profile', 'email'] });
         this.googleAuthCallback = (req, res, next) => {
-            passport_1.default.authenticate('google', (err, user) => {
+            passport_1.default.authenticate('google', async (err, user) => {
                 if (err || !user) {
                     res.status(400).json({ message: 'Authentication failed' });
                     return;
                 }
+                // Check if the user already exists in the database
+                let existingUser = await user_model_1.User.findOne({ googleId: user.googleId });
                 const accessToken = (0, jwt_1.generateAccessToken)(user);
                 const refreshToken = (0, jwt_1.generateRefreshToken)(user);
                 // Store refresh token in HTTP-only cookie

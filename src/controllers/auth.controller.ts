@@ -5,7 +5,7 @@ import {
   generateRefreshToken,
   verifyRefreshToken,
 } from '../utils/jwt';
-import { IUser } from '../models/user.model';
+import { IUser, User } from '../models/user.model';
 
 export class AuthController {
   googleAuth: (req: Request, res: Response, next: NextFunction) => void =
@@ -16,11 +16,14 @@ export class AuthController {
     res: Response,
     next: NextFunction
   ) => void = (req, res, next) => {
-    passport.authenticate('google', (err: any, user: IUser) => {
+    passport.authenticate('google', async (err: any, user: IUser) => {
       if (err || !user) {
         res.status(400).json({ message: 'Authentication failed' });
         return;
       }
+
+      // Check if the user already exists in the database
+      let existingUser = await User.findOne({ googleId: user.googleId });
 
       const accessToken = generateAccessToken(user);
       const refreshToken = generateRefreshToken(user);

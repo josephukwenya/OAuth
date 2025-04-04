@@ -6,6 +6,7 @@ export interface IUser extends Document {
   name: string;
   avatar?: string;
   provider: 'google' | 'facebook';
+  googleId: string;
 }
 
 const UserSchema = new Schema<IUser>({
@@ -14,6 +15,7 @@ const UserSchema = new Schema<IUser>({
   name: { type: String, required: true },
   avatar: { type: String },
   provider: { type: String, required: true },
+  googleId: { type: String },
 });
 
 export const User = mongoose.model<IUser>('User', UserSchema);
