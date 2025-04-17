@@ -1,12 +1,15 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as FacebookStrategy } from 'passport-facebook';
-import dotenv from 'dotenv';
-import { AuthService } from '../services/auth.service';
+import { Strategy as GitHubStrategy } from 'passport-github2';
 import { Profile as GoogleProfile } from 'passport-google-oauth20';
 import { Profile as FacebookProfile } from 'passport-facebook';
+import { Profile as GitHubProfile } from 'passport-github2';
+import { AuthService } from '../services/auth.service';
+import dotenv from 'dotenv';
 
 dotenv.config();
+
 const authService = new AuthService();
 
 interface DoneFunction {
@@ -17,7 +20,7 @@ interface VerifyCallback {
   (
     accessToken: string,
     refreshToken: string,
-    profile: GoogleProfile | FacebookProfile,
+    profile: GoogleProfile | FacebookProfile | GitHubProfile,
     done: DoneFunction
   ): void;
 }
@@ -34,6 +37,30 @@ passport.use(
       accessToken: string,
       refreshToken: string,
       profile: GoogleProfile,
+      done: DoneFunction
+    ) => {
+      // Just pass the profile to the controller
+      try {
+        return done(null, profile);
+      } catch (error) {
+        return done(error, false);
+      }
+    }
+  )
+);
+
+passport.use(
+  new GitHubStrategy(
+    {
+      clientID: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+      callbackURL: '/auth/github/callback',
+      scope: ['profile', 'email'],
+    },
+    async (
+      accessToken: string,
+      refreshToken: string,
+      profile: GitHubProfile,
       done: DoneFunction
     ) => {
       // Just pass the profile to the controller

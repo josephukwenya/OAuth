@@ -5,7 +5,7 @@ import {
   generateRefreshToken,
   verifyRefreshToken,
 } from '../utils/jwt';
-import { IUser, User } from '../models/user.model';
+import { IUser } from '../models/user.model';
 import { AuthService } from '../services/auth.service';
 const authService = new AuthService();
 
@@ -50,6 +50,46 @@ export class AuthController {
     })(req, res, next);
   };
 
+  githubAuth: (req: Request, res: Response, next: NextFunction) => void =
+    passport.authenticate('github', { scope: ['user:email'] });
+
+  githubAuthCallback: (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => void = (req, res, next) => {
+    passport.authenticate('github', async (err: any, profile: any) => {
+      if (err || !profile) {
+        res.status(400).json({ message: 'Authentication failed' });
+        return;
+      }
+
+      try {
+        const { user, accessToken, refreshToken } =
+          await authService.socialLogin(profile, 'github');
+
+        // Store refresh token in HTTP-only cookie
+        res.cookie('refreshToken', refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
+
+        return res.json({
+          accessToken,
+          user: {
+            name: user.name,
+            email: user.email,
+            avatar: user.avatar,
+          },
+        });
+      } catch (error) {
+        return res.status(500).json({ message: 'Internal server error' });
+      }
+    })(req, res, next);
+  };
+
   facebookAuth: (req: Request, res: Response, next: NextFunction) => void =
     passport.authenticate('facebook', { scope: ['email'] });
 
@@ -74,7 +114,14 @@ export class AuthController {
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       });
 
-      return res.json({ accessToken });
+      return res.json({
+        accessToken,
+        user: {
+          name: user.name,
+          email: user.email,
+          avatar: user.avatar,
+        },
+      });
     })(req, res, next);
   };
 

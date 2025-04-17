@@ -40,6 +40,36 @@ class AuthController {
                 }
             })(req, res, next);
         };
+        this.githubAuth = passport_1.default.authenticate('github', { scope: ['user:email'] });
+        this.githubAuthCallback = (req, res, next) => {
+            passport_1.default.authenticate('github', async (err, profile) => {
+                if (err || !profile) {
+                    res.status(400).json({ message: 'Authentication failed' });
+                    return;
+                }
+                try {
+                    const { user, accessToken, refreshToken } = await authService.socialLogin(profile, 'github');
+                    // Store refresh token in HTTP-only cookie
+                    res.cookie('refreshToken', refreshToken, {
+                        httpOnly: true,
+                        secure: process.env.NODE_ENV === 'production',
+                        sameSite: 'strict',
+                        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+                    });
+                    return res.json({
+                        accessToken,
+                        user: {
+                            name: user.name,
+                            email: user.email,
+                            avatar: user.avatar,
+                        },
+                    });
+                }
+                catch (error) {
+                    return res.status(500).json({ message: 'Internal server error' });
+                }
+            })(req, res, next);
+        };
         this.facebookAuth = passport_1.default.authenticate('facebook', { scope: ['email'] });
         this.facebookAuthCallback = (req, res, next) => {
             passport_1.default.authenticate('facebook', (err, user) => {
@@ -55,7 +85,14 @@ class AuthController {
                     sameSite: 'strict',
                     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
                 });
-                return res.json({ accessToken });
+                return res.json({
+                    accessToken,
+                    user: {
+                        name: user.name,
+                        email: user.email,
+                        avatar: user.avatar,
+                    },
+                });
             })(req, res, next);
         };
         this.refreshToken = (req, res, next) => {

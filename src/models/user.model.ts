@@ -5,8 +5,11 @@ export interface IUser extends Document {
   email?: string;
   name: string;
   avatar?: string;
-  provider: 'google' | 'facebook';
+  provider: 'google' | 'facebook' | 'github';
   googleId: string;
+  githubId: string;
+  facebookId: string;
+  profileUrl: string;
 }
 
 const UserSchema = new Schema<IUser>({
@@ -15,7 +18,10 @@ const UserSchema = new Schema<IUser>({
   name: { type: String, required: true },
   avatar: { type: String },
   provider: { type: String, required: true },
-  googleId: { type: String },
+  googleId: { type: String, unique: true, sparse: true },
+  githubId: { type: String, unique: true, sparse: true },
+  facebookId: { type: String, unique: true, sparse: true },
+  profileUrl: { type: String },
 });
 
 export const User = mongoose.model<IUser>('User', UserSchema);

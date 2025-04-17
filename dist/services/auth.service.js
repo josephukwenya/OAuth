@@ -11,8 +11,19 @@ class AuthService {
             name: profile.displayName,
             avatar: profile.photos?.[0]?.value,
             provider,
-            googleId: provider === 'google' ? profile.id : undefined,
+            profileUrl: provider === 'github' ? profile.profileUrl : undefined,
         };
+        // Dynamically assign the provider-specific ID
+        const providerIdField = `${provider}Id`;
+        socialUser[providerIdField] = profile.id;
+        // Dynamically assign the provider-specific ID with proper typing
+        // if (provider === 'google') {
+        //   socialUser.googleId = profile.id;
+        // } else if (provider === 'github') {
+        //   socialUser.githubId = profile.id;
+        // } else if (provider === 'facebook') {
+        //   socialUser.facebookId = profile.id;
+        // }
         let user = await user_model_1.User.findOne({ providerId: socialUser.providerId });
         if (!user) {
             try {

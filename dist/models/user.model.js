@@ -41,6 +41,9 @@ const UserSchema = new mongoose_1.Schema({
     name: { type: String, required: true },
     avatar: { type: String },
     provider: { type: String, required: true },
-    googleId: { type: String },
+    googleId: { type: String, unique: true, sparse: true },
+    githubId: { type: String, unique: true, sparse: true },
+    facebookId: { type: String, unique: true, sparse: true },
+    profileUrl: { type: String },
 });
 exports.User = mongoose_1.default.model('User', UserSchema);
